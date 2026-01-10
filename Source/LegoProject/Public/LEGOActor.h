@@ -15,6 +15,13 @@ enum class EShapeType : uint8
     Convex  UMETA(DisplayName = "Convex")
 };
 
+struct FDerivedConnectionData
+{
+    bool bHasLineOfSight = false;
+    FVector ClosestPointOnSphere = FVector::ZeroVector;
+    float ForwardAngleDegrees = 0.f;
+};
+
 UCLASS()
 class LEGOPROJECT_API ALEGOActor : public AActor
 {
@@ -23,15 +30,27 @@ class LEGOPROJECT_API ALEGOActor : public AActor
 	ALEGOActor();
 
 #if WITH_EDITOR
+
+    virtual void PostEditMove(bool InFinished) override;
+
+    virtual void PostEditChangeProperty(FPropertyChangedEvent& InEvent) override;
+
+
+    static bool ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEGOActor*>& OutValidActors, ULevel* OutCommonLevel, const TCHAR* ContextName);
+
     UFUNCTION(CallInEditor, BlueprintCallable)
     static void ConnectLEGOActors(const TArray<AActor*>& InActors);
 
     UFUNCTION(CallInEditor, BlueprintCallable)
     static void DisconnectLEGOActors(const TArray<AActor*>& InActors);
 
-    void AddConnection(ALEGOActor* InOtherActor);
-    void RemoveConnection(ALEGOActor* InOtherActor);
-    bool IsConnectedTo(ALEGOActor* InOtherActor) const;
+    bool AddConnection(ALEGOActor& InOtherActor);
+    bool RemoveConnection(ALEGOActor& InOtherActor);
+    bool IsConnectedTo(ALEGOActor& InOtherActor) const;
+    bool CheckLineOfSight(const ALEGOActor& InOther) const;
+    FVector CalculateClosestPointOnSphere(const ALEGOActor& InOther) const;
+    float CalculateForwardAngleDegrees(const ALEGOActor& InOther) const;
+    void RebuildDerivedData();
 #endif
 
  protected:
@@ -44,7 +63,9 @@ class LEGOPROJECT_API ALEGOActor : public AActor
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ALEGOActor", meta = (ClampMin = "1.0", ClampMax = "100.0"))
     float Size = 50.0f;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ALEGOActor")
-    TArray<TObjectPtr<ALEGOActor>> ConnectedActors;
-	
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ALEGOActor")
+    TArray<ALEGOActor*> ConnectedActors;
+
+    TMap<TWeakObjectPtr<ALEGOActor>, FDerivedConnectionData> DerivedData;
+
 };
