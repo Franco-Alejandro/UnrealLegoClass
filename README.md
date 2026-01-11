@@ -46,5 +46,10 @@ virtual void PostDuplicate(bool InDuplicateForPIE) override;
 
 ## Testing
  Just open a frontend session and run the lego actor test for serialization
+
+### 1
+ 
  <img width="233" height="62" alt="image" src="https://github.com/user-attachments/assets/643cff3a-f95d-4441-90ce-b3577cca3705" />
+
+### 2
  <img width="943" height="307" alt="image" src="https://github.com/user-attachments/assets/e0326d0f-b46f-453a-ae5b-b5a8a367472d" />
