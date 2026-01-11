@@ -16,9 +16,9 @@ bool ULEGOActorSerializationSubsystem::SerializeCurrentLevel(const FString& InPa
         TEXT("ULEGOActorSerializationSubsystem::SerializeCurrentLevel Serializing LEGO actors."));
 
     FLEGOLevelSerializedData levelData;
-    for (TActorIterator<ALEGOActor> It(world); It; ++It)
+    for (TActorIterator<ALEGOActor> it(world); it; ++it)
     {
-        ALEGOActor* legoActor = *It;
+        ALEGOActor* legoActor = *it;
         if (!IsValid(legoActor))
             continue;
 
