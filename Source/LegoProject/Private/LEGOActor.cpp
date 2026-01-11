@@ -13,6 +13,8 @@ ALEGOActor::ALEGOActor()
 {
 }
 
+
+#if WITH_EDITOR
 bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEGOActor*>& OutValidActors, ULevel* OutCommonLevel, const TCHAR* ContextName)
 {
     OutValidActors.Reset();
@@ -68,8 +70,6 @@ bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEG
     return true;
 }
 
-#if WITH_EDITOR
-
 void ALEGOActor::ConnectLEGOActors(const TArray<AActor*>& InActors)
 {
     TArray<ALEGOActor*> validLEGOActors;
@@ -124,8 +124,7 @@ void ALEGOActor::ConnectLEGOActors(const TArray<AActor*>& InActors)
 
 }
 void ALEGOActor::DisconnectLEGOActors(const TArray<AActor*>& InActors)
-{
-   
+{   
     TArray<ALEGOActor*> validLEGOActors;
     ULevel* commonLevel = nullptr;
 
@@ -183,16 +182,18 @@ bool ALEGOActor::AddConnection(ALEGOActor& InOtherActor)
     if (GetLevel() != InOtherActor.GetLevel())
         return false;
 
-    if (!ConnectedActors.Contains(&InOtherActor))
+    if (!IsConnectedTo(InOtherActor))
     {
         ConnectedActors.Add(&InOtherActor);
     }
 
-    TArray<ALEGOActor*>& connectedActors = InOtherActor.ConnectedActors;
-    if (!connectedActors.Contains(this))
+    if (!InOtherActor.IsConnectedTo(*this))
     {
-        connectedActors.Add(this);
+        InOtherActor.AddConnection(*this);
     }
+
+    RebuildDerivedDataForConnection(InOtherActor);
+    InOtherActor.RebuildDerivedDataForConnection(*this);
 
     return true;
 }
@@ -207,10 +208,14 @@ bool ALEGOActor::RemoveConnection(ALEGOActor& InOtherActor)
 
     ConnectedActors.Remove(&InOtherActor);
     InOtherActor.ConnectedActors.Remove(this);
+
+    InOtherActor.RemoveDerivedDataForConnection(*this);
+    RemoveDerivedDataForConnection(InOtherActor);
+
     return true;
 }
 
-bool ALEGOActor::IsConnectedTo(ALEGOActor& InOtherActor) const
+bool ALEGOActor::IsConnectedTo(const ALEGOActor& InOtherActor) const
 {
     return ConnectedActors.Contains(&InOtherActor);
 }
@@ -248,61 +253,111 @@ float ALEGOActor::CalculateForwardAngleDegrees(const ALEGOActor& InOther) const
     return FMath::RadiansToDegrees(FMath::Acos(dotProduct));
 }
 
-void ALEGOActor::RebuildDerivedData()
-{
-    int32 updatedConnections = 0;
-
-    // naive approach, we also need to update counterpart
-    for (ALEGOActor* otherLegoActor : ConnectedActors)
-    {
-        if (!IsValid(otherLegoActor))
-            continue;
-
-        FDerivedConnectionData data;
-        data.bHasLineOfSight = CheckLineOfSight(*otherLegoActor);
-        data.ClosestPointOnSphere = CalculateClosestPointOnSphere(*otherLegoActor);
-        data.ForwardAngleDegrees = CalculateForwardAngleDegrees(*otherLegoActor);
-
-        bool bChanged = true;
-
-        const FDerivedConnectionData& oldData = DerivedData.FindOrAdd(otherLegoActor);
-        bChanged = (oldData.bHasLineOfSight != data.bHasLineOfSight) ||
-            !oldData.ClosestPointOnSphere.Equals(data.ClosestPointOnSphere, 0.01f) ||
-            !FMath::IsNearlyEqual(oldData.ForwardAngleDegrees, data.ForwardAngleDegrees, 0.01f);
-
-        if (bChanged)
-        {
-            DerivedData.Add(otherLegoActor, data);
-            ++updatedConnections;
-
-            UE_LOG(LogLEGOActorConnections, Log,
-                TEXT("ALEGOActor::RebuildDerivedData. Updated data for connection %s -> %s: LOS=%s, ClosestPoint=%s, ForwardAngle=%.2f"),
-                *GetName(),
-                *otherLegoActor->GetName(),
-                data.bHasLineOfSight ? TEXT("True") : TEXT("False"),
-                *data.ClosestPointOnSphere.ToString(),
-                data.ForwardAngleDegrees);
-        }
-    }
-
-    UE_LOG(LogLEGOActorConnections, Log,
-        TEXT("ALEGOActor::RebuildDerivedData. Actor '%s' rebuilt derived data. [%d] connections updated."),
-        *GetName(),
-        updatedConnections);
-}
-
 void ALEGOActor::PostEditMove(bool InFinished)
 {
-    // should take into account multiple actors due to compounded costs?
     Super::PostEditMove(InFinished);
-    RebuildDerivedData();
+
+    if (InFinished)
+    {
+        RebuildDerivedDataForAllConnections();
+    }
 }
 
-void ALEGOActor::PostEditChangeProperty(FPropertyChangedEvent& InEvent)
+void ALEGOActor::PostEditChangeProperty(FPropertyChangedEvent& InPropertyChangedEvent)
 {
-    // should take into account multiple actors due to compounded costs?
-    Super::PostEditChangeProperty(InEvent);
-    RebuildDerivedData();
+    Super::PostEditChangeProperty(InPropertyChangedEvent);
+    
+    if (InPropertyChangedEvent.Property == nullptr)
+        return;
+
+    if (InPropertyChangedEvent.ChangeType == EPropertyChangeType::Interactive)
+        return;
+
+    RebuildDerivedDataForAllConnections();
+}
+
+void ALEGOActor::PostDuplicate(bool InDuplicateForPIE)
+{
+    Super::PostDuplicate(InDuplicateForPIE);
+    
+    //TODO FA: Could potentially just rebuild data and add connections
+    DerivedData.Reset();
+    ConnectedActors.Reset();
+
+    UE_LOG(LogLEGOActorConnections, Log,
+            TEXT("ALEGOActor::PostDuplicate ALEGOActor '%s' duplicated: connections cleaned."),
+            *GetName());
+}
+
+void ALEGOActor::RemoveDerivedDataForConnection(const ALEGOActor& InOther)
+{
+    DerivedData.Remove(&InOther);
+}
+
+void ALEGOActor::RebuildDerivedDataForConnection(ALEGOActor& InOther)
+{
+    if (&InOther == this)
+        return;
+
+    if (!IsConnectedTo(InOther) || !InOther.IsConnectedTo(*this))
+    {
+        UE_LOG(LogLEGOActorConnections, Warning, TEXT("ALEGOActor::RebuildDerivedDataForConnection Tried to rebuild derived data for actors that are not connected to each other. You might see this during duplication."));
+        return;
+    }
+
+    const bool bHasLOS = CheckLineOfSight(InOther);
+    const FVector closestThisToOther = CalculateClosestPointOnSphere(InOther);
+    const float forwardAngleThisToOther = CalculateForwardAngleDegrees(InOther);
+
+    FDerivedConnectionData& connectionData = DerivedData.FindOrAdd(&InOther);
+   
+    bool hasDataChanged =
+        connectionData.bHasLineOfSight != bHasLOS ||
+        !connectionData.ClosestPointOnSphere.Equals(closestThisToOther, 0.01f) ||
+        !FMath::IsNearlyEqual(connectionData.ForwardAngleDegrees, forwardAngleThisToOther, 0.01f);
+
+    if (hasDataChanged)
+    {
+        Modify();
+
+        connectionData.bHasLineOfSight = bHasLOS;
+        connectionData.ClosestPointOnSphere = closestThisToOther;
+        connectionData.ForwardAngleDegrees = forwardAngleThisToOther;
+
+        UE_LOG(LogLEGOActorConnections, Log, TEXT("ALEGOActor::RebuildDerivedDataForConnection DerivedData: %s -> %s; LOS=%d Angle=%.2f Point=%s"),
+            *GetName(), *InOther.GetName(),
+            bHasLOS,
+            forwardAngleThisToOther,
+            *closestThisToOther.ToString());
+    }
+}
+
+void ALEGOActor::RebuildDerivedDataForAllConnections()
+{
+    if (bIsRebuildingDerivedData)
+        return;
+
+    bIsRebuildingDerivedData = true;
+
+    int32 updatedCount = 0;
+
+    for (ALEGOActor* Other : ConnectedActors)
+    {
+        if (!IsValid(Other))
+            continue;
+
+        RebuildDerivedDataForConnection(*Other);
+        Other->RebuildDerivedDataForConnection(*this);
+
+        ++updatedCount;
+    }
+
+    bIsRebuildingDerivedData = false;
+
+    UE_LOG(LogLEGOActorConnections, Log,
+        TEXT("ALEGOActor::RebuildDerivedDataForAllConnections ALEGOActor '%s' rebuilt derived data for %d connections."),
+        *GetName(),
+        updatedCount);
 }
 
 #endif

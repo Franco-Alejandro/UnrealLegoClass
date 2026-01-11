@@ -17,6 +17,9 @@ enum class EShapeType : uint8
 
 struct FDerivedConnectionData
 {
+    // TODO: LOS can be affected by external actors. We should add a button to refresh data or bake this data when cooking. 
+    // There is no way right now in which we can monitor external actors getting in the middle of two LEGO actors, unless we have an overarching
+    // system that takes care of tackling this.
     bool bHasLineOfSight = false;
     FVector ClosestPointOnSphere = FVector::ZeroVector;
     float ForwardAngleDegrees = 0.f;
@@ -28,13 +31,14 @@ class LEGOPROJECT_API ALEGOActor : public AActor
 	GENERATED_BODY()
 	
 	ALEGOActor();
-
 #if WITH_EDITOR
-
     virtual void PostEditMove(bool InFinished) override;
-
     virtual void PostEditChangeProperty(FPropertyChangedEvent& InEvent) override;
+    virtual void PostDuplicate(bool InDuplicateForPIE) override;
 
+    void RebuildDerivedDataForAllConnections();
+    void RebuildDerivedDataForConnection(ALEGOActor& InOther);
+    void RemoveDerivedDataForConnection(const ALEGOActor& InOther);
 
     static bool ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEGOActor*>& OutValidActors, ULevel* OutCommonLevel, const TCHAR* ContextName);
 
@@ -46,11 +50,13 @@ class LEGOPROJECT_API ALEGOActor : public AActor
 
     bool AddConnection(ALEGOActor& InOtherActor);
     bool RemoveConnection(ALEGOActor& InOtherActor);
-    bool IsConnectedTo(ALEGOActor& InOtherActor) const;
+    bool IsConnectedTo(const ALEGOActor& InOtherActor) const;
+
     bool CheckLineOfSight(const ALEGOActor& InOther) const;
     FVector CalculateClosestPointOnSphere(const ALEGOActor& InOther) const;
     float CalculateForwardAngleDegrees(const ALEGOActor& InOther) const;
-    void RebuildDerivedData();
+
+    bool bIsRebuildingDerivedData = false;
 #endif
 
  protected:
