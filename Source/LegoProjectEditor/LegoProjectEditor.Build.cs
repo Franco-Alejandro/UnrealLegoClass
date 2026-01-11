@@ -12,12 +12,13 @@ public class LegoProjectEditor : ModuleRules
             "CoreUObject",
             "Engine",
             "Json",
-            "JsonUtilities"
+            "JsonUtilities",
         });
 
         PrivateDependencyModuleNames.AddRange(new string[]
         {
-            "UnrealEd" 
+            "UnrealEd",  
+            "LegoProject"
         });
 
         if (Target.bBuildEditor)

@@ -15,7 +15,7 @@ ALEGOActor::ALEGOActor()
 
 
 #if WITH_EDITOR
-bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEGOActor*>& OutValidActors, ULevel* OutCommonLevel, const TCHAR* ContextName)
+bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEGOActor*>& OutValidActors, ULevel* OutCommonLevel, const TCHAR* InContextName)
 {
     OutValidActors.Reset();
     OutCommonLevel = nullptr;
@@ -23,7 +23,7 @@ bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEG
     if (InActors.Num() < 2)
     {
         UE_LOG(LogLEGOActorConnections, Error,
-            TEXT("%s requires at least two actor instances."), ContextName);
+            TEXT("%s requires at least two actor instances."), InContextName);
         return false;
     }
 
@@ -32,7 +32,7 @@ bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEG
         if (!IsValid(actor))
         {
             UE_LOG(LogLEGOActorConnections, Warning,
-                TEXT("%s: Null or invalid actor passed."), ContextName);
+                TEXT("%s: Null or invalid actor passed."), InContextName);
             continue;
         }
 
@@ -41,7 +41,7 @@ bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEG
         {
             UE_LOG(LogLEGOActorConnections, Warning,
                 TEXT("%s: Actor '%s' is not an ALEGOActor and will be ignored."),
-                ContextName, *actor->GetName());
+                InContextName, *actor->GetName());
             continue;
         }
 
@@ -53,7 +53,7 @@ bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEG
         {
             UE_LOG(LogLEGOActorConnections, Warning,
                 TEXT("%s: Actor '%s' is in a different level and will be ignored."),
-                ContextName, *LEGOActor->GetName());
+                InContextName, *LEGOActor->GetName());
             continue;
         }
 
@@ -63,7 +63,7 @@ bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEG
     if (OutValidActors.Num() < 2)
     {
         UE_LOG(LogLEGOActorConnections, Error,
-            TEXT("%s requires at least two valid ALEGOActor instances."), ContextName);
+            TEXT("%s requires at least two valid ALEGOActor instances."), InContextName);
         return false;
     }
 
@@ -341,13 +341,13 @@ void ALEGOActor::RebuildDerivedDataForAllConnections()
 
     int32 updatedCount = 0;
 
-    for (ALEGOActor* Other : ConnectedActors)
+    for (ALEGOActor* otherLEGOActor : ConnectedActors)
     {
-        if (!IsValid(Other))
+        if (!IsValid(otherLEGOActor))
             continue;
 
-        RebuildDerivedDataForConnection(*Other);
-        Other->RebuildDerivedDataForConnection(*this);
+        RebuildDerivedDataForConnection(*otherLEGOActor);
+        otherLEGOActor->RebuildDerivedDataForConnection(*this);
 
         ++updatedCount;
     }

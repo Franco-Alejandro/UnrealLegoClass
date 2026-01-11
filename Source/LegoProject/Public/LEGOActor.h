@@ -30,7 +30,8 @@ class LEGOPROJECT_API ALEGOActor : public AActor
 {
 	GENERATED_BODY()
 	
-	ALEGOActor();
+public:
+    ALEGOActor();
 #if WITH_EDITOR
     virtual void PostEditMove(bool InFinished) override;
     virtual void PostEditChangeProperty(FPropertyChangedEvent& InEvent) override;
@@ -40,7 +41,7 @@ class LEGOPROJECT_API ALEGOActor : public AActor
     void RebuildDerivedDataForConnection(ALEGOActor& InOther);
     void RemoveDerivedDataForConnection(const ALEGOActor& InOther);
 
-    static bool ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEGOActor*>& OutValidActors, ULevel* OutCommonLevel, const TCHAR* ContextName);
+    static bool ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEGOActor*>& OutValidActors, ULevel* OutCommonLevel, const TCHAR* InContextName);
 
     UFUNCTION(CallInEditor, BlueprintCallable)
     static void ConnectLEGOActors(const TArray<AActor*>& InActors);
@@ -59,7 +60,6 @@ class LEGOPROJECT_API ALEGOActor : public AActor
     bool bIsRebuildingDerivedData = false;
 #endif
 
- protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ALEGOActor")
     FColor Color = FColor::White;
 
