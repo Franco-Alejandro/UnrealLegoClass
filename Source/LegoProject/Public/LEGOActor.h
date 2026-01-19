@@ -16,13 +16,18 @@ enum class EShapeType : uint8
     Convex  UMETA(DisplayName = "Convex")
 };
 
+USTRUCT()
 struct FDerivedConnectionData
 {
+    GENERATED_BODY()
     // TODO: LOS can be affected by external actors. We should add a button to refresh data or bake this data when cooking. 
     // There is no way right now in which we can monitor external actors getting in the middle of two LEGO actors, unless we have an overarching
     // system that takes care of tackling this.
+    UPROPERTY()
     bool bHasLineOfSight = false;
+    UPROPERTY()
     FVector ClosestPointOnSphere = FVector::ZeroVector;
+    UPROPERTY()
     float ForwardAngleDegrees = 0.f;
 };
 
@@ -73,6 +78,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ALEGOActor")
     TArray<ALEGOActor*> ConnectedActors;
 
-    TMap<TWeakObjectPtr<ALEGOActor>, FDerivedConnectionData> DerivedData;
+    UPROPERTY()
+    TMap<ALEGOActor*, FDerivedConnectionData> DerivedData;
 
 };
