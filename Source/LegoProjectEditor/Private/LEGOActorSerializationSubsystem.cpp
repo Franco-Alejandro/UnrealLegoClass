@@ -32,6 +32,7 @@ bool ULEGOActorSerializationSubsystem::SerializeCurrentLevel(const FString& InPa
 
         for (ALEGOActor* Connected : legoActor->ConnectedActors)
         {
+            // Should serialize the connection information
             if (IsValid(Connected))
                 legoActorData.ConnectedActorNames.Add(Connected->GetActorLabel());
         }
@@ -109,6 +110,7 @@ bool ULEGOActorSerializationSubsystem::DeserializeIntoCurrentLevel(const FString
 
         for (const FString& connectedName : data.ConnectedActorNames)
         {
+            // Should deserialize the connection information
             ALEGOActor* connectedLEGOActor = spawnedActors.FindRef(connectedName);
             if (connectedLEGOActor)
                 legoActor->AddConnection(*connectedLEGOActor);

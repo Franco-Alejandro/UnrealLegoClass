@@ -31,7 +31,7 @@ struct FLEGOActorSerializedData
     UPROPERTY()
     TArray<FString> ConnectedActorNames;
 
-    UPROPERTY()
+    // Could improve by soft object ptr
     FString ActorClassPath;
 };
 
