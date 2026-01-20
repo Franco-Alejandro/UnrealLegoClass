@@ -55,6 +55,9 @@ public:
     UFUNCTION(CallInEditor, BlueprintCallable)
     static void DisconnectLEGOActors(const TArray<AActor*>& InActors);
 
+    UFUNCTION(CallInEditor, BlueprintCallable)
+    static bool AreLegoPiecesConnected(const TArray<AActor*>& InActors);
+
     bool AddConnection(ALEGOActor& InOtherActor);
     bool RemoveConnection(ALEGOActor& InOtherActor);
     bool IsConnectedTo(const ALEGOActor& InOtherActor) const;

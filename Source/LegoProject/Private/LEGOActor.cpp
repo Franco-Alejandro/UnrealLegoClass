@@ -174,6 +174,50 @@ void ALEGOActor::DisconnectLEGOActors(const TArray<AActor*>& InActors)
         disconnectCount);
 }
 
+bool ALEGOActor::AreLegoPiecesConnected(const TArray<AActor*>& InActors)
+{
+    if (!GEngine)
+        return false;
+
+    TArray<ALEGOActor*> validLEGOActors;
+    ULevel* commonLevel = nullptr;
+
+    if (!ValidateLEGOActors(
+        InActors,
+        validLEGOActors,
+        commonLevel,
+        TEXT("ALEGOActor::AreLegoPiecesConnected")))
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("Please read the log and select valid lego actors"));
+        return false;
+    }
+
+    for (int32 i = 0; i < validLEGOActors.Num(); ++i)
+    {
+        ALEGOActor* previousLEGOActor = validLEGOActors[i];
+
+        if (!IsValid(previousLEGOActor))
+            continue;
+
+        for (int32 j = i + 1; j < validLEGOActors.Num(); ++j)
+        {
+            ALEGOActor* subsequentLEGOActor = validLEGOActors[j];
+            if (!IsValid(subsequentLEGOActor))
+                continue;
+
+            if (!previousLEGOActor->IsConnectedTo(*subsequentLEGOActor))
+            {
+                GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("The selected lego actors are not connected"));
+
+                return false;
+            }
+        }
+    }
+
+    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("The selected lego actors are connected"));
+    return true;
+}
+
 bool ALEGOActor::AddConnection(ALEGOActor& InOtherActor)
 {
     if (&InOtherActor == this)
