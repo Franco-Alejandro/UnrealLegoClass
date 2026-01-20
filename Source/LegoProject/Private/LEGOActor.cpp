@@ -282,6 +282,8 @@ FVector ALEGOActor::CalculateClosestPointOnSphere(const ALEGOActor& InOther) con
 
 float ALEGOActor::CalculateForwardAngleDegrees(const ALEGOActor& InOther) const
 {
+    // Interpreting "angle difference" as forward-to-target alignment.
+    // If strict forward-to-forward comparison is desired, this can be swapped.
     FVector forward = GetActorForwardVector();
     FVector toOther = (InOther.GetActorLocation() - GetActorLocation()).GetSafeNormal();
 
