@@ -386,6 +386,7 @@ void ALEGOActor::RebuildDerivedDataForAllConnections()
         if (!IsValid(otherLEGOActor))
             continue;
 
+        // Could improve by holding LOS and just grabbing the difference in distance. That doesnt need to be recalculated
         RebuildDerivedDataForConnection(*otherLEGOActor);
         otherLEGOActor->RebuildDerivedDataForConnection(*this);
 
