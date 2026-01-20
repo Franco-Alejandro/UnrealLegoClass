@@ -15,10 +15,10 @@ ALEGOActor::ALEGOActor()
 
 
 #if WITH_EDITOR
-bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEGOActor*>& OutValidActors, ULevel* OutCommonLevel, const TCHAR* InContextName)
+bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEGOActor*>& OutValidActors, const TCHAR* InContextName)
 {
     OutValidActors.Reset();
-    OutCommonLevel = nullptr;
+    ULevel* commonLevel = nullptr;
 
     if (InActors.Num() < 2)
     {
@@ -45,11 +45,11 @@ bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEG
             continue;
         }
 
-        if (!OutCommonLevel)
+        if (!commonLevel)
         {
-            OutCommonLevel = LEGOActor->GetLevel();
+            commonLevel = LEGOActor->GetLevel();
         }
-        else if (LEGOActor->GetLevel() != OutCommonLevel)
+        else if (LEGOActor->GetLevel() != commonLevel)
         {
             UE_LOG(LogLEGOActorConnections, Warning,
                 TEXT("%s: Actor '%s' is in a different level and will be ignored."),
@@ -73,12 +73,10 @@ bool ALEGOActor::ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEG
 void ALEGOActor::ConnectLEGOActors(const TArray<AActor*>& InActors)
 {
     TArray<ALEGOActor*> validLEGOActors;
-    ULevel* commonLevel = nullptr;
 
     if (!ValidateLEGOActors(
         InActors,
         validLEGOActors,
-        commonLevel,
         TEXT("ALEGOActor::ConnectLEGOActors")))
     {
         return;
@@ -126,12 +124,10 @@ void ALEGOActor::ConnectLEGOActors(const TArray<AActor*>& InActors)
 void ALEGOActor::DisconnectLEGOActors(const TArray<AActor*>& InActors)
 {   
     TArray<ALEGOActor*> validLEGOActors;
-    ULevel* commonLevel = nullptr;
 
     if (!ValidateLEGOActors(
         InActors,
         validLEGOActors,
-        commonLevel,
         TEXT("ALEGOActor::DisconnectLEGOActors")))
     {
         return;
@@ -180,12 +176,10 @@ bool ALEGOActor::AreLegoPiecesConnected(const TArray<AActor*>& InActors)
         return false;
 
     TArray<ALEGOActor*> validLEGOActors;
-    ULevel* commonLevel = nullptr;
 
     if (!ValidateLEGOActors(
         InActors,
         validLEGOActors,
-        commonLevel,
         TEXT("ALEGOActor::AreLegoPiecesConnected")))
     {
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("Please read the log and select valid lego actors"));

@@ -47,7 +47,7 @@ public:
     void RebuildDerivedDataForConnection(ALEGOActor& InOther);
     void RemoveDerivedDataForConnection(const ALEGOActor& InOther);
 
-    static bool ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEGOActor*>& OutValidActors, ULevel* OutCommonLevel, const TCHAR* InContextName);
+    static bool ValidateLEGOActors(const TArray<AActor*>& InActors, TArray<ALEGOActor*>& OutValidActors, const TCHAR* InContextName);
 
     UFUNCTION(CallInEditor, BlueprintCallable)
     static void ConnectLEGOActors(const TArray<AActor*>& InActors);
